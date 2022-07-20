@@ -65,6 +65,7 @@ public class UserServiceImpl implements UserService {
         userEntity.setUserId(publicUserId);
 
         userEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+        userEntity.setEmailVerificationToken(utils.generateEmailVerificationToken(publicUserId));
 
         UserEntity storedUserDetails = userRepository.save(userEntity);
         //UserDTO returnValue = new UserDTO();
@@ -79,7 +80,10 @@ public class UserServiceImpl implements UserService {
          UserEntity userEntity = userRepository.findByEmail(email);
          if (userEntity == null) throw new UserServiceException(ErrorMessages.NO_RECORD_FOUND.getErrorMessage());
 
-         return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), new ArrayList<>());
+         //return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), new ArrayList<>());
+
+        return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), userEntity.getEmailVerificationStatus(),
+                true,true,true,new ArrayList<>());
     }
 
 
@@ -134,7 +138,7 @@ public class UserServiceImpl implements UserService {
     public List<UserDTO> getUsers(int page, int limit) {
         List<UserDTO> returnValue = new ArrayList<>();
 
-        if (page > 0) page = --page;
+        if (page > 0) page--;
 
         Pageable pageableRequest = PageRequest.of(page, limit);
         Page<UserEntity> usersPage = userRepository.findAll(pageableRequest);
@@ -146,5 +150,19 @@ public class UserServiceImpl implements UserService {
             returnValue.add(userDto);
         }
         return returnValue;
+    }
+
+    @Override
+    public boolean verifyEmailToken(String token) {
+
+        UserEntity userEntity = userRepository.findUserByEmailVerificationToken(token);
+
+        if(userEntity == null || Utils.hasTokenExpired(token)) return false;
+
+        userEntity.setEmailVerificationToken(null);
+        userEntity.setEmailVerificationStatus(Boolean.TRUE);
+        userRepository.save(userEntity);
+
+        return true;
     }
 }

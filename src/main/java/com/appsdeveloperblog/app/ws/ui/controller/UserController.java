@@ -166,6 +166,17 @@ public class UserController {
         return EntityModel.of(returnValue, linkList);
     }
 
+    //http://localhost:8080/users/email-verification?token=sdfsdf
+    @GetMapping(path="/email-verification", produces = {MediaType.APPLICATION_XML_VALUE,MediaType.APPLICATION_JSON_VALUE})
+    public OperationStatusModel verifyEmailToken(@RequestParam(value="token") String token){
+        OperationStatusModel returnValue = new OperationStatusModel();
 
+        if(userService.verifyEmailToken(token))
+            returnValue.setOperationResult(RequestOperationStatus.SUCCESS.name());
+        else
+            returnValue.setOperationResult(RequestOperationStatus.SUCCESS.name());
+
+        return returnValue;
+    }
 
 }
