@@ -90,7 +90,6 @@ public class AmazonSES {
 
     public boolean sendPasswordResetRequest(String firstName, String email, String token)
     {
-        boolean returnValue = false;
 
         AmazonSimpleEmailService client =
                 AmazonSimpleEmailServiceClientBuilder.standard()
@@ -117,12 +116,11 @@ public class AmazonSES {
                 .withSource(FROM);
 
         SendEmailResult result = client.sendEmail(request);
-        if(result != null && (result.getMessageId()!=null && !result.getMessageId().isEmpty()))
-        {
-            returnValue = true;
-        }
 
-        return returnValue;
+        if(result == null || (result.getMessageId()==null || result.getMessageId().isEmpty()))
+            return false;
+
+        return true;
     }
 
 }

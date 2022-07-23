@@ -5,6 +5,8 @@ import com.appsdeveloperblog.app.ws.service.AddressService;
 import com.appsdeveloperblog.app.ws.service.UserService;
 import com.appsdeveloperblog.app.ws.shared.dto.AddressDTO;
 import com.appsdeveloperblog.app.ws.shared.dto.UserDTO;
+import com.appsdeveloperblog.app.ws.ui.model.request.PasswordResetModel;
+import com.appsdeveloperblog.app.ws.ui.model.request.PasswordResetRequestModel;
 import com.appsdeveloperblog.app.ws.ui.model.request.UserDetailsRequestModel;
 import com.appsdeveloperblog.app.ws.ui.model.response.*;
 import org.modelmapper.ModelMapper;
@@ -23,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@RequestMapping("users") //http://localhost:8080/users
+@RequestMapping("users") //http://localhost:8080/SpringBoot-Course-Project/users
 public class UserController {
 
     @Autowired
@@ -130,10 +132,10 @@ public class UserController {
             }//foreach
         }//if
 
-        //http://localhost:8080/users/userId
+        //http://localhost:8080/SpringBoot-Course-Project/users/userId
         Link userLink = WebMvcLinkBuilder.linkTo(UserController.class).slash(id).withRel("user");
 
-        //http://localhost:8080/users/userId/addresses [handled by this method]
+        //http://localhost:8080/SpringBoot-Course-Project/users/userId/addresses [handled by this method]
         selfLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(UserController.class)
                 .getUserAddresses(id)).withSelfRel();
 
@@ -148,14 +150,14 @@ public class UserController {
 
         List<Link> linkList = new ArrayList<>();
 
-        //http://localhost:8080/users/userId
+        //http://localhost:8080/SpringBoot-Course-Project/users/userId
         Link userLink = WebMvcLinkBuilder.linkTo(UserController.class).slash(userId).withRel("user");
 
-        //http://localhost:8080/users/userId/addresses
+        //http://localhost:8080/SpringBoot-Course-Project/users/userId/addresses
         Link userAddressesLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(UserController.class)
                         .getUserAddresses(userId)).withRel("addresses");
 
-        //http://localhost:8080/users/userId/addresses/addressId [handled by this method]
+        //http://localhost:8080/SpringBoot-Course-Project/users/userId/addresses/addressId [handled by this method]
         Link selfLink = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(UserController.class)
                         .getUserAddress(userId,addressId)).withSelfRel();
 
@@ -166,7 +168,7 @@ public class UserController {
         return EntityModel.of(returnValue, linkList);
     }
 
-    //http://localhost:8080/users/email-verification?token=sdfsdf
+    //http://localhost:8080/SpringBoot-Course-Project/users/email-verification?token=sdfsdf
     @GetMapping(path="/email-verification", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public OperationStatusModel verifyEmailToken(@RequestParam(value="token") String token){
         OperationStatusModel returnValue = new OperationStatusModel();
@@ -179,5 +181,39 @@ public class UserController {
 
         return returnValue;
     }
+
+    //http://localhost:8080/SpringBoot-Course-Project/users/password-reset-request
+    @PostMapping(path = "/password-reset-request", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    public OperationStatusModel requestReset(@RequestBody PasswordResetRequestModel pwdRequest){
+        OperationStatusModel returnValue = new OperationStatusModel();
+        returnValue.setOperationName(RequestOperationName.REQUEST_PASSWORD_RESET.name());
+
+        if(userService.requestPasswordReset(pwdRequest.getEmail()))
+            returnValue.setOperationResult(RequestOperationStatus.SUCCESS.name());
+        else
+            returnValue.setOperationResult(RequestOperationStatus.ERROR.name());
+
+        return returnValue;
+    }
+
+    //http://localhost:8080/SpringBoot-Course-Project/users/password-reset
+    @PostMapping(path="/password-reset", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    public OperationStatusModel resetPassword(@RequestBody PasswordResetModel pwdReset){
+        OperationStatusModel returnValue = new OperationStatusModel();
+
+        boolean operationResult = userService.resetPassword(
+                pwdReset.getToken(),
+                pwdReset.getPassword());
+
+        returnValue.setOperationName(RequestOperationStatus.PASSWORD_RESET.name());
+
+        if (operationResult)
+            returnValue.setOperationResult(RequestOperationStatus.SUCCESS.name());
+        else
+            returnValue.setOperationResult(RequestOperationStatus.ERROR.name());
+
+        return returnValue;
+    }
+
 
 }

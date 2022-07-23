@@ -1,6 +1,8 @@
 package com.appsdeveloperblog.app.ws.service.impl;
 
 import com.appsdeveloperblog.app.ws.exceptions.UserServiceException;
+import com.appsdeveloperblog.app.ws.io.entity.PasswordResetTokenEntity;
+import com.appsdeveloperblog.app.ws.io.repositories.PasswordResetTokenRepository;
 import com.appsdeveloperblog.app.ws.io.repositories.UserRepository;
 import com.appsdeveloperblog.app.ws.io.entity.UserEntity;
 import com.appsdeveloperblog.app.ws.service.UserService;
@@ -35,6 +37,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    @Autowired
+    PasswordResetTokenRepository passwordResetTokenRepository;
 
 
     @Override
@@ -170,5 +175,49 @@ public class UserServiceImpl implements UserService {
         userRepository.save(userEntity);
 
         return true;
+    }
+
+    @Override
+    public boolean requestPasswordReset(String email) {
+        UserEntity userEntity = userRepository.findByEmail(email);
+        if (userEntity==null) return false;
+
+        String token = utils.generatePasswordVerificationToken(userEntity.getUserId());
+        PasswordResetTokenEntity pwdResetToken = new PasswordResetTokenEntity();
+        pwdResetToken.setToken(token);
+        pwdResetToken.setUserDetails(userEntity);
+
+        passwordResetTokenRepository.save(pwdResetToken);
+
+        boolean returnValue = new AmazonSES().sendPasswordResetRequest(
+                    userEntity.getFirstName(),
+                    userEntity.getEmail(),
+                    token);
+
+        return returnValue;
+    }
+
+    @Override
+    public boolean resetPassword(String token, String password) {
+        if (Utils.hasTokenExpired(token)) return false;
+
+        PasswordResetTokenEntity pwdResetToken = passwordResetTokenRepository.findByToken(token);
+        if(pwdResetToken == null) return false;
+
+        //Prepare new Password
+        String encodedPwd = bCryptPasswordEncoder.encode(password);
+
+        //Update user password on db
+        UserEntity userEntity = pwdResetToken.getUserDetails();
+        userEntity.setEncryptedPassword(encodedPwd);
+        UserEntity savedUserEntity = userRepository.save(userEntity);
+
+        //Check if password was saved
+        boolean returnValue = savedUserEntity.getEncryptedPassword().equalsIgnoreCase(encodedPwd);
+
+        //Delete password reset token from db
+        passwordResetTokenRepository.delete(pwdResetToken);
+
+        return returnValue;
     }
 }
