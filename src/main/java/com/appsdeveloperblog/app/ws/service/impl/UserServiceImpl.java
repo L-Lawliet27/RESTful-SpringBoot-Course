@@ -41,12 +41,14 @@ public class UserServiceImpl implements UserService {
     @Autowired
     PasswordResetTokenRepository passwordResetTokenRepository;
 
+    @Autowired
+    AmazonSES amazonSES;
 
     @Override
     public UserDTO createUser(UserDTO user) {
 
         //This line checks whether the user already exists via the unique field
-        if (userRepository.findByEmail(user.getEmail()) != null) throw new RuntimeException("Record Already Exists");
+        if (userRepository.findByEmail(user.getEmail()) != null) throw new UserServiceException("Record Already Exists");
 
         for (int i = 0; i < user.getAddresses().size(); i++) {
             AddressDTO address = user.getAddresses().get(i);
@@ -80,7 +82,7 @@ public class UserServiceImpl implements UserService {
         UserDTO returnValue = modelMapper.map(storedUserDetails, UserDTO.class);
 
         //Send email to user for verification
-        new AmazonSES().verifyEmail(returnValue);
+        amazonSES.verifyEmail(returnValue);
 
         return returnValue;
     }
