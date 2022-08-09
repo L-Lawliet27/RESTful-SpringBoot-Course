@@ -5,7 +5,8 @@ import java.io.Serializable;
 import java.util.List;
 
 
-@Entity(name="users") //give it the name of the db table that'll store user records
+@Entity
+@Table(name="users") //give it the name of the db table that'll store user records
 public class UserEntity implements Serializable {
     private static final long serialVersionUID = 1L;
 

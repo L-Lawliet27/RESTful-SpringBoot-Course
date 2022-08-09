@@ -50,8 +50,8 @@ public class UserController {
         return returnValue;
     }
 
-    @PostMapping(consumes = {MediaType.APPLICATION_XML_VALUE,MediaType.APPLICATION_JSON_VALUE},
-                produces = {MediaType.APPLICATION_XML_VALUE,MediaType.APPLICATION_JSON_VALUE})
+    @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+                produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
     public UserRest createUser(@RequestBody UserDetailsRequestModel userDetails) throws UserServiceException {
 
         if(userDetails.getFirstName().isEmpty()) throw new UserServiceException(ErrorMessages.MISSING_REQUIRED_FIELD.getErrorMessage());
@@ -60,10 +60,16 @@ public class UserController {
         //BeanUtils.copyProperties(userDetails, userDTO);
         ModelMapper modelMapper = new ModelMapper();
         UserDTO userDTO = modelMapper.map(userDetails, UserDTO.class);
+        UserDTO createdUser;
+        try {
+            createdUser = userService.createUser(userDTO);
+            return modelMapper.map(createdUser, UserRest.class);
+        }catch (Exception e){
 
-        UserDTO createdUser = userService.createUser(userDTO);
+            System.out.println(e.getMessage());
+        }
         //BeanUtils.copyProperties(createdUser, returnValue);
-        return modelMapper.map(createdUser, UserRest.class);
+        return null;
     }
 
     @PutMapping(path="/{id}",
