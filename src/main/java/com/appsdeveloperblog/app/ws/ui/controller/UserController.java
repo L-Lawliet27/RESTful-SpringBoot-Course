@@ -3,6 +3,7 @@ package com.appsdeveloperblog.app.ws.ui.controller;
 import com.appsdeveloperblog.app.ws.exceptions.UserServiceException;
 import com.appsdeveloperblog.app.ws.service.AddressService;
 import com.appsdeveloperblog.app.ws.service.UserService;
+import com.appsdeveloperblog.app.ws.shared.Roles;
 import com.appsdeveloperblog.app.ws.shared.dto.AddressDTO;
 import com.appsdeveloperblog.app.ws.shared.dto.UserDTO;
 import com.appsdeveloperblog.app.ws.ui.model.request.PasswordResetModel;
@@ -21,10 +22,14 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 @RestController
@@ -44,6 +49,8 @@ public class UserController {
 
     //Since we provide the public id of the user in the Get request it must include the parameter to get
     //The order of production matters as the default would be XML unless told otherwise in the request
+
+    @PostAuthorize("hasRole('ADMIN') or returnObject.userId==principal.userId")
     @ApiOperation(value = "Get User Details Web Service Endpoint",
             notes = "${userController.GetUser.ApiOperation.Notes}")
     @ApiImplicitParams({
@@ -71,6 +78,8 @@ public class UserController {
         //BeanUtils.copyProperties(userDetails, userDTO);
         ModelMapper modelMapper = new ModelMapper();
         UserDTO userDTO = modelMapper.map(userDetails, UserDTO.class);
+        userDTO.setRoles(new HashSet<>(List.of(Roles.ROLE_USER.name())));
+
         UserDTO createdUser;
         try {
             createdUser = userService.createUser(userDTO);
@@ -103,6 +112,9 @@ public class UserController {
         return returnValue;
     }
 
+    @PreAuthorize("hasRole('ADMIN') or #id==principal.userId")
+    //@PreAuthorize("hasAuthority('DELETE_AUTHORITY')")
+    //@Secured("ROLE_ADMIN")
     @ApiOperation(value = "Delete User Web Service Endpoint",
             notes = "${userController.DeleteUser.ApiOperation.Notes}")
     @ApiImplicitParams({
